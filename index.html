@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>방구석 바 (Bar 방구석)</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --accent-color: #00adb5;
+            --text-color: #eeeeee;
+            --liquid-color: #d1f2d9; /* 기본 소주 색상 */
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            font-family: 'Malgun Gothic', sans-serif;
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* 스마트폰 형태의 모바일 퍼스트 컨테이너 */
+        .phone-container {
+            width: 360px;
+            height: 640px;
+            background: linear-gradient(135deg, #1f4068, #162447);
+            border-radius: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            box-sizing: border-box;
+            position: relative;
+            border: 4px solid #333;
+        }
+
+        .header {
+            text-align: center;
+            margin-top: 10px;
+            width: 100%;
+        }
+
+        .header h1 {
+            font-size: 20px;
+            margin: 0;
+            color: var(--accent-color);
+            letter-spacing: 1px;
+        }
+
+        .status {
+            font-size: 14px;
+            margin-top: 5px;
+            color: #888;
+        }
+
+        /* 주종 선택 슬라이더 영역 */
+        .selector-area {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 80%;
+            margin: 20px 0;
+        }
+
+        .arrow-btn {
+            background: none;
+            border: none;
+            color: var(--text-color);
+            font-size: 24px;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .arrow-btn:active {
+            transform: scale(0.8);
+        }
+
+        #drink-name {
+            font-size: 18px;
+            font-weight: bold;
+            min-width: 80px;
+            text-align: center;
+        }
+
+        /* 술잔 그래픽 영역 */
+        .glass-area {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            width: 100%;
+        }
+
+        /* 유리잔 모양 CSS */
+        .glass {
+            width: 120px;
+            height: 180px;
+            border: 4px solid rgba(255, 255, 255, 0.6);
+            border-top: none;
+            border-bottom-left-radius: 20px;
+            border-bottom-right-radius: 20px;
+            position: relative;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        /* 액체 그래픽 */
+        .liquid {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 0%; /* 기본 상태는 비어있음 */
+            background-color: var(--liquid-color);
+            transition: height 0.5s ease, background-color 0.3s;
+            opacity: 0.85;
+        }
+
+        /* 액체 표면 거품/출렁임 효과 */
+        .liquid::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: rgba(255,255,255,0.4);
+        }
+
+        /* 하단 제어 버튼 영역 */
+        .control-area {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            border-radius: 50px;
+            border: 2px solid var(--accent-color);
+            background: transparent;
+            color: var(--accent-color);
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        #drink-btn {
+            background: var(--accent-color);
+            color: #fff;
+            font-size: 18px;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 15px rgba(0, 173, 181, 0.3);
+        }
+
+        /* 취기 효과 필터 (JavaScript에서 body에 토글함) */
+        .drunk-filter {
+            filter: blur(2px) contrast(1.2);
+            transition: filter 0.5s ease;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="phone-container" id="phone">
+        <div class="header">
+            <h1>WHAT DO YOU WANT TO DRINK?</h1>
+            <div class="status">오늘 마신 주량: <span id="counter">0</span>잔</div>
+        </div>
+
+        <div class="selector-area">
+            <button class="arrow-btn" onclick="prevDrink()">◀</button>
+            <div id="drink-name">소주</div>
+            <button class="arrow-btn" onclick="nextDrink()">▶</button>
+        </div>
+
+        <div class="glass-area">
+            <div class="glass">
+                <div class="liquid" id="liquid"></div>
+            </div>
+        </div>
+
+        <div class="control-area">
+            <button class="btn" onclick="pourDrink()">술 따르기 (POUR)</button>
+            <button class="btn" id="drink-btn" onclick="drinkAlcohol()">DRINK</button>
+        </div>
+    </div>
+
+    <script>
+        // 주종 데이터 정의 (이름 및 액체 색상 고유값)
+        const drinks = [
+            { name: "소주", color: "rgba(209, 242, 217, 0.7)" },
+            { name: "맥주", color: "rgba(255, 213, 79, 0.9)" },
+            { name: "와인", color: "rgba(123, 31, 162, 0.8)" }
+        ];
+
+        let currentIdx = 0;
+        let currentLevel = 0; // 잔에 찬 술의 양 (0% ~ 90%)
+        let drinkCount = 0;   // 마신 총 잔 수
+
+        const drinkNameEl = document.getElementById("drink-name");
+        const liquidEl = document.getElementById("liquid");
+        const counterEl = document.getElementById("counter");
+        const bodyEl = document.body;
+
+        // 주종 변경 함수
+        function updateDrinkDisplay() {
+            drinkNameEl.innerText = drinks[currentIdx].name;
+            document.documentElement.style.setProperty('--liquid-color', drinks[currentIdx].color);
+            
+            // 주종이 바뀌면 잔을 초기화합니다.
+            currentLevel = 0;
+            liquidEl.style.height = currentLevel + "%";
+        }
+
+        function nextDrink() {
+            currentIdx = (currentIdx + 1) % drinks.length;
+            updateDrinkDisplay();
+        }
+
+        function prevDrink() {
+            currentIdx = (currentIdx - 1 + drinks.length) % drinks.length;
+            updateDrinkDisplay();
+        }
+
+        // 술 따르기 기능 (누를 때마다 30%씩 차오름, 최대 90%)
+        function pourDrink() {
+            if (currentLevel >= 90) {
+                alert("잔이 가득 찼습니다! 어서 마셔보세요.");
+                return;
+            }
+            currentLevel += 30;
+            liquidEl.style.height = currentLevel + "%";
+        }
+
+        // 술 마시기 기능 (DRINK 버튼을 누르면 점차 줄어들며 카운트 증가)
+        function drinkAlcohol() {
+            if (currentLevel === 0) {
+                alert("잔이 비어있습니다. 먼저 술을 따라주세요!");
+                return;
+            }
+
+            // 시뮬레이터 감성을 위해 일정 간격으로 술이 줄어들게 처리
+            let interval = setInterval(() => {
+                if (currentLevel > 0) {
+                    currentLevel -= 10;
+                    liquidEl.style.height = currentLevel + "%";
+                } else {
+                    clearInterval(interval);
+                    currentLevel = 0;
+                    drinkCount++;
+                    counterEl.innerText = drinkCount;
+                    
+                    // 주량에 따른 화면 흐림(취기) 효과 반영
+                    if (drinkCount >= 3) {
+                        bodyEl.classList.add("drunk-filter");
+                    }
+                }
+            }, 80); // 줄어드는 속도 조절
+        }
+
+        // 초기 화면 세팅
+        updateDrinkDisplay();
+    </script>
+</body>
+</html>
